@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scan to Access</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+</head>
+<body style="text-align: center; font-family: sans-serif; margin-top: 60px;">
+<h1>Scan this QR to access SlotSnap</h1>
+<canvas id="qr"></canvas>
+<p id="status">Waiting for scan...</p>
+
+<script>
+    const qrValue = "http://localhost:3000/map.html?code=UNLOCK_MAP_A";
+
+    // Generate QR
+    new QRious({
+        element: document.getElementById("qr"),
+        value: qrValue,
+        size: 200
+    });
+
+    // Poll the server every 2 seconds
+    setInterval(() => {
+        fetch('/check-scan')
+            .then(res => res.json())
+            .then(data => {
+                if (data.scanned) {
+                    document.getElementById('status').innerText = '✅ QR scanned!';
+                    window.location.href = qrValue;
+                }
+            });
+    }, 2000);
+</script>
+</body>
+</html>
