@@ -12,6 +12,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 let qrScanned = false;
+let layout = [
+    [0, 1, 0],
+    [0, 0, 1],
+    [1, 0, 0]
+]
 
 // QR validation route
 app.post('/validate-qr', (req, res) => {
@@ -49,4 +54,19 @@ app.get('/check-scan', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// GET layout
+app.get('/get-layout', (req, res) => {
+    res.json({ layout });
+});
+
+// Reserve a slot
+app.post('/reserve', (req, res) => {
+    const { row, col } = req.body;
+    if (layout[row][col] === 0) {
+        layout[row][col] = 2; // 2 = reserved
+        return res.json({ success: true });
+    }
+    return res.status(400).json({ success: false, message: 'Spot already taken' });
 });

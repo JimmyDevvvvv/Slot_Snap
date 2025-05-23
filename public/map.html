@@ -3,15 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <title>SlotSnap Map</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 40px; }
+    .cell {
+      display: inline-block;
+      width: 60px;
+      height: 60px;
+      margin: 6px;
+      border: 2px solid #333;
+      font-size: 20px;
+      line-height: 60px;
+      cursor: pointer;
+    }
+    .available { background-color: green; color: white; }
+    .occupied { background-color: red; color: white; cursor: not-allowed; }
+    .reserved { background-color: blue; color: white; }
+  </style>
 </head>
-<body style="text-align: center;">
+<body>
 <h2>Welcome to SlotSnap Map</h2>
-<p>Loading parking layout...</p>
+<p>Click an available spot to reserve it.</p>
+<div id="map"></div>
+<p id="status"></p>
 
 <script>
-  fetch('/notify-scanned', {
-    method: 'POST'
-  });
+  const mapDiv = document.getElementById("map");
+  const status = document.getElementById("status");
+
+  function drawMap(layout) {
+    mapDiv.innerHTML = '';
+
+    layout.forEach((row, rowIndex) => {
+      const rowDiv = document.createElement("div");
+
+      row.forEach((cell, colIndex) => {
+        const div = document.createElement("div");
+        div.classList.add("cell");
+
+        if (cell === 0) {
+          div.classList.add("available");
+          div.innerText = "🅿";
+          div.onclick = () => reserve(rowIndex, colIndex);
+        } else if (cell === 1) {
+          div.classList.add("occupied");
+          div.innerText = "X";
+        } else if (cell === 2) {
+          div.classList.add("reserved");
+          div.innerText = "✓";
+        }
+
+        rowDiv.appendChild(div);
+      });
+
+      mapDiv.appendChild(rowDiv);
+    });
+  }
+
+  function loadMap() {
+    fetch('/get-layout')
+            .then(res => res.json())
+            .then(data => drawMap(data.layout));
+  }
+
+  function reserve(row, col) {
+    fetch('/reserve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row, col })
+    })
+            .then(res => {
+              if (!res.ok) throw new Error("Spot already taken");
+              return res.json();
+            })
+            .then(() => {
+              status.innerText = "✅ Spot reserved!";
+              loadMap();
+            })
+            .catch(() => {
+              status.innerText = "❌ Could not reserve this spot.";
+            });
+  }
+
+  // Notify scan
+  fetch('/notify-scanned', { method: 'POST' });
+
+  // Initial map load
+  loadMap();
 </script>
 </body>
 </html>
